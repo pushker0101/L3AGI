@@ -1,8 +1,9 @@
 import asyncio
 
-from langchain import hub
-from langchain.agents import (AgentExecutor, AgentType, create_react_agent,
-                              initialize_agent)
+# from langchain import hub
+# from langchain.agents import (AgentExecutor, AgentType, create_react_agent,
+#                               initialize_agent)
+from xagent import XAgent, XAgentExecutor
 
 from agents.base_agent import BaseAgent
 from agents.conversational.output_parser import ConvoOutputParser
@@ -65,30 +66,12 @@ class ConversationalAgent(BaseAgent):
             streaming_handler = AsyncCallbackHandler()
 
             llm.streaming = True
-            # llm.callbacks = [
-            #     run_logs_manager.get_agent_callback_handler(),
-            #     streaming_handler,
-            # ]
 
-            # agent = initialize_agent(
-            #     tools,
-            #     llm,
-            #     agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
-            #     verbose=True,
-            #     memory=memory,
-            #     handle_parsing_errors="Check your output and make sure it conforms!",
-            #     agent_kwargs={
-            #         "system_message": system_message,
-            #         "output_parser": ConvoOutputParser(),
-            #     },
-            #     callbacks=[run_logs_manager.get_agent_callback_handler()],
-            # )
+            # Initialize XAgent
+            agent = XAgent(model=llm, tools=tools, prompt_template=system_message)
 
-            agentPrompt = hub.pull("hwchase17/react")
-
-            agent = create_react_agent(llm, tools, prompt=agentPrompt)
-
-            agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+            # Create an executor for the agent
+            agent_executor = XAgentExecutor(agent=agent, tools=tools, verbose=True)
 
             chunks = []
             final_answer_detected = False

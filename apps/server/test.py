@@ -1,6 +1,13 @@
-from langchain.smith import RunEvalConfig, run_on_dataset
-from langchain_community.chat_models import ChatOpenAI
+# from langchain.smith import RunEvalConfig, run_on_dataset
+# from langchain_community.chat_models import ChatOpenAI
+
+
+
+from xagent import XAgent, XAgentExecutor
+from xagent.evaluation import RunEvalConfig, run_on_dataset
+from xagent.models import OpenAI
 from langsmith import Client
+
 
 # TODO: refactor test to use new auth
 
@@ -19,30 +26,22 @@ from langsmith import Client
 
 
 def agent_factory():
-    # llm = ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo")
-    # tools = get_tools(["SerpGoogleSearch"])
+    model = OpenAI(temperature=0.5, model_name="gpt-3.5-turbo")
+    tools = get_tools(["SerpGoogleSearch"])
 
-    # return initialize_agent(
-    #     tools,
-    #     llm,
-    #     agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
-    #     verbose=True,
-    #     handle_parsing_errors="Check your output and make sure it conforms!",
-    #     agent_kwargs={
-    #         # "prefix": system_message,
-    #         "system_message": system_message,
-    #         # "format_instructions": FORMAT_INSTRUCTIONS,
-    #         "output_parser": ConvoOutputParser(),
-    #     },
-    #     max_iterations=5,
-    # )
-    pass
+    agent = XAgent(
+        model=model,
+        tools=tools,
+        prompt_template=system_message,
+        output_parser=ConvoOutputParser(),
+        max_iterations=5,
+    )
 
+    return XAgentExecutor(agent=agent, tools=tools, verbose=True)
 
 agent = agent_factory()
 
 client = Client()
-
 
 eval_config = RunEvalConfig(
     evaluators=[
@@ -51,7 +50,7 @@ eval_config = RunEvalConfig(
         RunEvalConfig.Criteria("conciseness"),
     ],
     input_key="input",
-    eval_llm=ChatOpenAI(temperature=0.5, model_name="gpt-3.5-turbo"),
+    eval_model=OpenAI(temperature=0.5, model_name="gpt-3.5-turbo"),
 )
 
 chain_results = run_on_dataset(

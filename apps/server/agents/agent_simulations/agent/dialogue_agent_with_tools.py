@@ -1,8 +1,9 @@
 from typing import List, Optional
 
-from langchain.agents import AgentType, initialize_agent
-from langchain.schema import AIMessage, SystemMessage
-from langchain_community.chat_models import ChatOpenAI
+# from langchain.agents import AgentType, initialize_agent
+# from langchain.schema import AIMessage, SystemMessage
+# from langchain_community.chat_models import ChatOpenAI
+from xagent import XAgent, XAgentExecutor
 
 from agents.agent_simulations.agent.dialogue_agent import DialogueAgent
 from agents.conversational.output_parser import ConvoOutputParser
@@ -35,7 +36,7 @@ class DialogueAgentWithTools(DialogueAgent):
 
     def send(self) -> str:
         """
-        Applies the chatmodel to the message history
+        Applies the chat model to the message history
         and returns the message string
         """
 
@@ -65,23 +66,18 @@ class DialogueAgentWithTools(DialogueAgent):
             self.model.callbacks = [self.run_logs_manager.get_agent_callback_handler()]
             callbacks.append(self.run_logs_manager.get_agent_callback_handler())
 
-        agent = initialize_agent(
-            self.tools,
-            self.model,
-            agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
-            verbose=True,
-            handle_parsing_errors=True,
-            memory=memory,
-            callbacks=callbacks,
-            agent_kwargs={
-                "system_message": self.system_message.content,
-                "output_parser": ConvoOutputParser(),
-            },
+        # Initialize XAgent
+        agent = XAgent(
+            model=self.model,
+            tools=self.tools,
+            prompt_template=self.system_message.content,
         )
+
+        agent_executor = XAgentExecutor(agent=agent, tools=self.tools, verbose=True)
 
         prompt = "\n".join(self.message_history + [self.prefix])
 
-        res = agent.run(input=prompt)
+        res = agent_executor.run(input=prompt)
 
         # FIXME: is memory
         # memory.save_ai_message(res)
